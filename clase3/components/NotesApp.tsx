@@ -7,6 +7,7 @@ import { NoteBoard } from "@/components/NoteBoard";
 import { NoteForm } from "@/components/NoteForm";
 import { parseStoredNotes, STORAGE_KEY, isExpired, type Note } from "@/lib/notes";
 import { useTheme } from "@/contexts/ThemeContext";
+import axios from "axios";
 
 const announcedIds = new Set<string>();
 
@@ -64,6 +65,21 @@ export function NotesApp() {
       current.map((note) => (sent.includes(note.id) ? { ...note, notified: true } : note)),
     );
   }, [notes, now, ready]);
+
+  const onPersist = async () => {
+    try {
+      const parsedNotes = notes.map((note) => ({
+        title: note.title,
+        body: note.text,
+      }));
+      const response = await axios.post("/api/notes", {
+        notes: parsedNotes || [],
+      });
+      alert(`Notas persistidas!!! ${response?.data?.data}`);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   function saveNote(values: { title: string; text: string; minutes: number }) {
     if (editing) {
@@ -142,6 +158,21 @@ export function NotesApp() {
             }}
           >
             {dark ? "Modo claro" : "Modo oscuro"}
+          </button>
+          <button
+            type="button"
+            onClick={onPersist}
+            style={{
+              border: dark ? "1px solid #5c5146" : "1px solid #d9d0c3",
+              background: dark ? "#2c261f" : "#fffdf8",
+              color: "inherit",
+              borderRadius: 10,
+              padding: "10px 14px",
+              cursor: "pointer",
+              font: "inherit",
+            }}
+          >
+            Persistir notas
           </button>
         </header>
 
