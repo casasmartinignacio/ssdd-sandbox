@@ -6,19 +6,17 @@ import { useEffect, useState } from "react";
 import { NoteBoard } from "@/components/NoteBoard";
 import { NoteForm } from "@/components/NoteForm";
 import { parseStoredNotes, STORAGE_KEY, isExpired, type Note } from "@/lib/notes";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const announcedIds = new Set<string>();
 
-type NotesAppProps = {
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
-};
-
-export function NotesApp({ theme, onToggleTheme }: NotesAppProps) {
+export function NotesApp() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [ready, setReady] = useState(false);
   const [now, setNow] = useState(0);
   const [editing, setEditing] = useState<Note | null>(null);
+
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const stored = parseStoredNotes(window.localStorage.getItem(STORAGE_KEY));
@@ -132,7 +130,7 @@ export function NotesApp({ theme, onToggleTheme }: NotesAppProps) {
           <h1 style={{ margin: 0, fontSize: 36, letterSpacing: "-0.03em" }}>Sticky notes</h1>
           <button
             type="button"
-            onClick={onToggleTheme}
+            onClick={toggleTheme}
             style={{
               border: dark ? "1px solid #5c5146" : "1px solid #d9d0c3",
               background: dark ? "#2c261f" : "#fffdf8",
@@ -149,7 +147,6 @@ export function NotesApp({ theme, onToggleTheme }: NotesAppProps) {
 
         <NoteForm
           key={editing?.id ?? "new"}
-          theme={theme}
           editing={editing !== null}
           initialTitle={editing?.title ?? ""}
           initialText={editing?.text ?? ""}
@@ -159,7 +156,6 @@ export function NotesApp({ theme, onToggleTheme }: NotesAppProps) {
         />
 
         <NoteBoard
-          theme={theme}
           notes={notes}
           ready={ready}
           now={now}

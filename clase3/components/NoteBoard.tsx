@@ -1,8 +1,8 @@
 import { NoteCard } from "@/components/NoteCard";
+import { Theme, useTheme } from "@/contexts/ThemeContext";
 import type { Note } from "@/lib/notes";
 
 type NoteBoardProps = {
-  theme: "light" | "dark";
   notes: Note[];
   ready: boolean;
   now: number;
@@ -12,7 +12,6 @@ type NoteBoardProps = {
 };
 
 export function NoteBoard({
-  theme,
   notes,
   ready,
   now,
@@ -20,7 +19,8 @@ export function NoteBoard({
   onEdit,
   onDelete,
 }: NoteBoardProps) {
-  const muted = theme === "dark" ? "#cbbba6" : "#5c5146";
+  const { theme } = useTheme();
+  const muted = theme === Theme.DARK ? "#cbbba6" : "#5c5146";
 
   return (
     <section>

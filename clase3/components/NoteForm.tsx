@@ -1,9 +1,9 @@
 "use client";
 
+import { Theme, useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 
 type NoteFormProps = {
-  theme: "light" | "dark";
   editing: boolean;
   initialTitle: string;
   initialText: string;
@@ -13,7 +13,6 @@ type NoteFormProps = {
 };
 
 export function NoteForm({
-  theme,
   editing,
   initialTitle,
   initialText,
@@ -25,7 +24,10 @@ export function NoteForm({
   const [text, setText] = useState(initialText);
   const [minutesInput, setMinutesInput] = useState(initialMinutes);
   const [error, setError] = useState("");
-  const dark = theme === "dark";
+
+  const { theme } = useTheme();
+  const dark = theme === Theme.DARK;
+  
   const inputStyle = {
     border: dark ? "1px solid #5c5146" : "1px solid #d9d0c3",
     background: dark ? "#1c1915" : "#fff",
