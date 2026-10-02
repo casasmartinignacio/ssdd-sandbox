@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/form/Button";
+import { ErrorText } from "@/components/form/ErrorText";
 import { NoteBoard } from "@/components/NoteBoard";
 import { NoteForm } from "@/components/NoteForm";
 import { Theme, useTheme } from "@/contexts/ThemeContext";
@@ -136,15 +138,6 @@ export function NotesApp() {
   }
 
   const dark = theme === Theme.DARK;
-  const buttonStyle = {
-    border: dark ? "1px solid #5c5146" : "1px solid #d9d0c3",
-    background: dark ? "#2c261f" : "#fffdf8",
-    color: "inherit",
-    borderRadius: 10,
-    padding: "10px 14px",
-    cursor: "pointer",
-    font: "inherit",
-  };
 
   return (
     <main
@@ -173,12 +166,8 @@ export function NotesApp() {
             ) : null}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" onClick={toggleTheme} style={buttonStyle}>
-              {dark ? "Modo claro" : "Modo oscuro"}
-            </button>
-            <button type="button" onClick={() => void logout()} style={buttonStyle}>
-              Salir
-            </button>
+            <Button onClick={toggleTheme}>{dark ? "Modo claro" : "Modo oscuro"}</Button>
+            <Button onClick={() => void logout()}>Salir</Button>
           </div>
         </header>
 
@@ -192,9 +181,7 @@ export function NotesApp() {
           onCancel={() => setEditing(null)}
         />
 
-        {notesQuery.isError ? (
-          <p style={{ color: "#8a3b2c" }}>No se pudieron cargar las notas.</p>
-        ) : null}
+        <ErrorText message={notesQuery.isError ? "No se pudieron cargar las notas." : undefined} />
 
         <NoteBoard
           notes={notes ?? []}
