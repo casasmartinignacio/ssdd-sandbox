@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormik } from "formik";
+import { Form, Formik, type FormikHelpers } from "formik";
 import { Button } from "@/components/form/Button";
 import { SubmitButton } from "@/components/form/SubmitButton";
 import { TextAreaField } from "@/components/form/TextAreaField";
@@ -26,62 +26,68 @@ export function NoteForm({
   onCancel,
 }: NoteFormProps) {
   const dark = useTheme().theme === Theme.DARK;
-  const formik = useFormik({
-    initialValues: {
-      title: initialTitle,
-      text: initialText,
-      minutes: initialMinutes,
-    },
-    enableReinitialize: true,
-    validate: validateWith(noteFormSchema),
-    onSubmit: (values, helpers) => {
-      const parsed = noteFormSchema.parse(values);
-      onSubmit({
-        title: parsed.title,
-        text: parsed.text,
-        minutes: parsed.minutes,
-      });
-      if (!editing) helpers.resetForm();
-    },
-  });
+  const initialValues = {
+    title: initialTitle,
+    text: initialText,
+    minutes: initialMinutes,
+  };
+
+  function handleSubmit(values: typeof initialValues, helpers: FormikHelpers<typeof initialValues>) {
+    const parsed = noteFormSchema.parse(values);
+    onSubmit({
+      title: parsed.title,
+      text: parsed.text,
+      minutes: parsed.minutes,
+    });
+    if (!editing) helpers.resetForm();
+  }
 
   return (
-    <section
-      style={{
-        background: dark ? "#2c261f" : "#fffdf8",
-        border: dark ? "1px solid #453c32" : "1px solid #e6dccb",
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 28,
-      }}
+    <Formik
+      initialValues={initialValues}
+      enableReinitialize
+      validate={validateWith(noteFormSchema)}
+      onSubmit={handleSubmit}
     >
-      <form noValidate onSubmit={formik.handleSubmit} style={{ display: "grid", gap: 14 }}>
-        <TextField
-          formik={formik}
-          name="title"
-          label="Título"
-          placeholder="Por ejemplo, llamar al veterinario"
-        />
-        <TextAreaField formik={formik} name="text" label="Texto" placeholder="Detalle de la nota" />
-        <TextField
-          formik={formik}
-          name="minutes"
-          label="Minutos de validez"
-          type="number"
-          min={1}
-          step={1}
-          width={120}
-        />
-        {editing ? (
-          <p style={{ margin: 0, color: dark ? "#cbbba6" : "#5c5146", fontSize: 14 }}>
-            Al guardar, la validez vuelve a contar desde ahora.
-          </p>
-        ) : null}
-        <div style={{ display: "flex", gap: 8 }}>
-          <SubmitButton>{editing ? "Guardar cambios" : "Crear nota"}</SubmitButton>
-          {editing ? <Button onClick={onCancel}>Cancelar</Button> : null}
-        </div>
-      </form>
-    </section>
+      {(formik) => (
+        <section
+          style={{
+            background: dark ? "#2c261f" : "#fffdf8",
+            border: dark ? "1px solid #453c32" : "1px solid #e6dccb",
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 28,
+          }}
+        >
+          <Form noValidate style={{ display: "grid", gap: 14 }}>
+            <TextField
+              formik={formik}
+              name="title"
+              label="Título"
+              placeholder="Por ejemplo, llamar al veterinario"
+            />
+            <TextAreaField formik={formik} name="text" label="Texto" placeholder="Detalle de la nota" />
+            <TextField
+              formik={formik}
+              name="minutes"
+              label="Minutos de validez"
+              type="number"
+              min={1}
+              step={1}
+              width={120}
+            />
+            {editing ? (
+              <p style={{ margin: 0, color: dark ? "#cbbba6" : "#5c5146", fontSize: 14 }}>
+                Al guardar, la validez vuelve a contar desde ahora.
+              </p>
+            ) : null}
+            <div style={{ display: "flex", gap: 8 }}>
+              <SubmitButton>{editing ? "Guardar cambios" : "Crear nota"}</SubmitButton>
+              {editing ? <Button onClick={onCancel}>Cancelar</Button> : null}
+            </div>
+          </Form>
+        </section>
+      )}
+    </Formik>
   );
 }

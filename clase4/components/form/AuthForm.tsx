@@ -1,17 +1,10 @@
 "use client";
 
-import type { FormEventHandler, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Form } from "formik";
 import { Theme, useTheme } from "@/contexts/ThemeContext";
 
-export function AuthForm({
-  title,
-  onSubmit,
-  children,
-}: {
-  title: string;
-  onSubmit: FormEventHandler<HTMLFormElement>;
-  children: ReactNode;
-}) {
+export function AuthForm({ title, children }: { title: string; children: ReactNode }) {
   const dark = useTheme().theme === Theme.DARK;
 
   return (
@@ -26,9 +19,8 @@ export function AuthForm({
         padding: 24,
       }}
     >
-      <form
+      <Form
         noValidate
-        onSubmit={onSubmit}
         style={{
           width: "100%",
           maxWidth: 420,
@@ -42,7 +34,7 @@ export function AuthForm({
       >
         <h1 style={{ margin: 0 }}>{title}</h1>
         {children}
-      </form>
+      </Form>
     </main>
   );
 }

@@ -1,74 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/form/Button";
 import { ErrorText } from "@/components/form/ErrorText";
 import { NoteBoard } from "@/components/NoteBoard";
 import { NoteForm } from "@/components/NoteForm";
 import { Theme, useTheme } from "@/contexts/ThemeContext";
+import { useLogout, useMe } from "@/hooks/useAuth";
+import { useCreateNote, useDeleteNote, useMarkNoteNotified, useNotes, useUpdateNote } from "@/hooks/useNotes";
 import { isExpired, type Note } from "@/lib/notes";
+import type { CreateNoteRequest } from "@/services/notes";
 
 const announcedIds = new Set<string>();
 
-type NoteInput = { title: string; text: string; minutes: number };
-
-async function readJson<T>(response: Response): Promise<T> {
-  if (!response.ok) throw new Error("No se pudo completar la operación");
-  return response.json() as Promise<T>;
-}
-
 export function NotesApp() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
   const [now, setNow] = useState(0);
   const [editing, setEditing] = useState<Note | null>(null);
 
-  const me = useQuery({
-    queryKey: ["me"],
-    queryFn: async () => readJson<{ name: string; email: string }>(await fetch("/api/auth/me")),
-  });
-
-  const notesQuery = useQuery({
-    queryKey: ["notes"],
-    queryFn: async () => {
-      const data = await readJson<{ notes: Note[] }>(await fetch("/api/notes"));
-      return data.notes;
-    },
-  });
-
+  const me = useMe();
+  const notesQuery = useNotes();
+  const createNote = useCreateNote();
+  const updateNote = useUpdateNote();
+  const deleteNote = useDeleteNote();
+  const { mutate: markNoteNotified } = useMarkNoteNotified();
+  const logout = useLogout();
   const notes = notesQuery.data;
-
-  const createNote = useMutation({
-    mutationFn: async (values: NoteInput) =>
-      readJson(
-        await fetch("/api/notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        }),
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
-  });
-
-  const updateNote = useMutation({
-    mutationFn: async (values: NoteInput & { id: string }) =>
-      readJson(
-        await fetch("/api/notes", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        }),
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
-  });
-
-  const deleteNote = useMutation({
-    mutationFn: async (id: string) => readJson(await fetch(`/api/notes?id=${id}`, { method: "DELETE" })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
-  });
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -96,28 +55,20 @@ export function NotesApp() {
         continue;
       }
 
-      void fetch("/api/notes", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: note.id, notified: true }),
-      }).then((response) => {
-        if (response.ok) queryClient.invalidateQueries({ queryKey: ["notes"] });
-        else announcedIds.delete(note.id);
+      markNoteNotified(note.id, {
+        onError: () => announcedIds.delete(note.id),
       });
     }
-  }, [notes, now, queryClient]);
+  }, [notes, now, markNoteNotified]);
 
-  function saveNote(values: NoteInput) {
+  function saveNote(values: CreateNoteRequest) {
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       void Notification.requestPermission();
     }
 
     if (editing) {
       announcedIds.delete(editing.id);
-      updateNote.mutate(
-        { id: editing.id, ...values },
-        { onSuccess: () => setEditing(null) },
-      );
+      updateNote.mutate({ id: editing.id, ...values }, { onSuccess: () => setEditing(null) });
       return;
     }
 
@@ -130,9 +81,8 @@ export function NotesApp() {
     if (editing?.id === id) setEditing(null);
   }
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    queryClient.clear();
+  async function handleLogout() {
+    await logout.mutateAsync();
     router.push("/login");
     router.refresh();
   }
@@ -167,7 +117,7 @@ export function NotesApp() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Button onClick={toggleTheme}>{dark ? "Modo claro" : "Modo oscuro"}</Button>
-            <Button onClick={() => void logout()}>Salir</Button>
+            <Button onClick={() => void handleLogout()}>Salir</Button>
           </div>
         </header>
 
