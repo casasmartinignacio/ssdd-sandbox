@@ -1,0 +1,39 @@
+name: clase5
+
+on:
+  push:
+    paths:
+      - 'clase5/**'
+      - '.github/workflows/clase5.yml'
+  pull_request:
+    paths:
+      - 'clase5/**'
+      - '.github/workflows/clase5.yml'
+
+defaults:
+  run:
+    working-directory: clase5
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: clase5/package-lock.json
+      - run: npm ci
+      - run: npx eslint "{src,apps,libs,test}/**/*.ts"
+      - run: npm test
+      - run: npm run test:e2e
+      - run: npm run build
+
+  docker:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t clase5-api .
+      - run: docker compose config
