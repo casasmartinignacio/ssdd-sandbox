@@ -1,31 +1,11 @@
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: alumnos
-      POSTGRES_PASSWORD: alumnos
-      POSTGRES_DB: alumnos
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U alumnos -d alumnos']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   api:
     build: .
     environment:
       PORT: 3000
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_USER: alumnos
-      DATABASE_PASSWORD: alumnos
-      DATABASE_NAME: alumnos
-      DATABASE_SYNC: 'true'
-    depends_on:
-      db:
-        condition: service_healthy
+      DATA_FILE: /app/data/db.json
+    volumes:
+      - alumnodata:/app/data
     healthcheck:
       test:
         [
@@ -49,4 +29,4 @@ services:
         condition: service_healthy
 
 volumes:
-  pgdata:
+  alumnodata:

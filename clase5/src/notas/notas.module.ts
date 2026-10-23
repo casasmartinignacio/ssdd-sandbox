@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Inscripcion } from '../inscripciones/entities/inscripcion.entity';
-import { Nota } from './entities/nota.entity';
+import { DatabaseModule } from '../database/database.module';
 import { NotasController } from './notas.controller';
 import { NotasService } from './notas.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Nota, Inscripcion])],
+  imports: [DatabaseModule],
   controllers: [NotasController],
   providers: [NotasService],
 })

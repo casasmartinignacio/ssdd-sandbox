@@ -1,10 +1,23 @@
 # Clase 5 — API de alumnos
 
-API REST en NestJS para alumnos, inscripciones y notas. Postgres guarda los datos. Nginx recibe el tráfico y lo reenvía a la API.
+API REST en NestJS para alumnos, inscripciones y notas. Los datos se guardan en un archivo JSON. Nginx recibe el tráfico y lo reenvía a la API.
 
-## Cómo levantarla
+## Cómo levantarla sin Docker
 
-Hace falta Docker. Desde esta carpeta:
+Node 22. Desde esta carpeta:
+
+```bash
+npm install
+npm run start:dev
+```
+
+El archivo aparece en `data/db.json` la primera vez que se guarda algo. La ruta se puede cambiar con `DATA_FILE` en un `.env` (hay un ejemplo en `.env.example`).
+
+- API: http://localhost:3000/api
+- Documentación: http://localhost:3000/docs
+- Salud: http://localhost:3000/api/health
+
+## Con Docker y proxy
 
 ```bash
 docker compose up --build
@@ -12,9 +25,8 @@ docker compose up --build
 
 - API: http://localhost:8080/api
 - Documentación: http://localhost:8080/docs
-- Salud: http://localhost:8080/api/health
 
-El puerto público es **8080**. Nginx escucha ahí y proxyea a la API, que adentro de Docker usa el puerto 3000.
+El puerto público es **8080**. Nginx escucha ahí y proxyea a la API. El JSON queda en un volumen de Docker, así que los datos siguen después de reiniciar los contenedores.
 
 ## Recursos
 
@@ -28,24 +40,13 @@ El puerto público es **8080**. Nginx escucha ahí y proxyea a la API, que adent
 
 Una inscripción es única por alumno, materia, año y cuatrimestre. No se borra un alumno que tiene inscripciones, ni una inscripción que tiene notas.
 
-## Desarrollo sin Docker
-
-Node 22. Copiá `.env.example` a `.env`, levantá Postgres y después:
-
-```bash
-npm install
-npm run start:dev
-```
-
 ## Estructura
 
-Cada recurso tiene su módulo, con controller, service, DTOs y entidad. `DatabaseModule` configura TypeORM. `ValidationPipe` descarta campos de más y transforma los tipos. Swagger se genera en `/docs`.
-
-`DATABASE_SYNC=true` crea las tablas al arrancar. Sirve para la clase. En un proyecto real eso se reemplaza por migraciones.
+Cada recurso tiene su módulo, con controller, service y DTOs. `JsonDb` lee y escribe `data/db.json`. Las escrituras van en fila para que dos pedidos no pisen el archivo. `ValidationPipe` descarta campos de más y transforma los tipos. Swagger se genera en `/docs`.
 
 ## Tests
 
-`npm test` prueba el servicio de alumnos con repositorios falsos, sin Postgres. `npm run test:e2e` prueba `GET /api/health`. Jest no puede cargar `@nestjs/typeorm` porque ese paquete es ESM, así que `src/testing/nestjs-typeorm.mock.ts` reemplaza el decorador `InjectRepository` y deja el mismo token de inyección.
+`npm test` prueba el servicio de alumnos contra un JSON temporal. `npm run test:e2e` prueba `GET /api/health`.
 
 ## CI
 

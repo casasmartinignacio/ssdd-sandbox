@@ -1,6 +1,3 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Inscripcion } from '../../inscripciones/entities/inscripcion.entity';
-
 export enum InstanciaNota {
   PARCIAL = 'parcial',
   RECUPERATORIO = 'recuperatorio',
@@ -8,22 +5,15 @@ export enum InstanciaNota {
   TP = 'tp',
 }
 
-@Entity('notas')
-export class Nota {
-  @PrimaryGeneratedColumn('uuid')
+export type Nota = {
   id: string;
-
-  @Column({ type: 'double precision' })
   valor: number;
-
-  @Column({ type: 'enum', enum: InstanciaNota })
   instancia: InstanciaNota;
-
-  @Column({ type: 'date' })
   fecha: string;
-
-  @ManyToOne(() => Inscripcion, (inscripcion) => inscripcion.notas, {
-    onDelete: 'RESTRICT',
-  })
-  inscripcion: Inscripcion;
-}
+  inscripcion: {
+    id: string;
+    materia: string;
+    anio: number;
+    cuatrimestre: number;
+  };
+};

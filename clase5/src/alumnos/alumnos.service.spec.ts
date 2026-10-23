@@ -1,78 +1,92 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { QueryFailedError } from 'typeorm';
-import { Inscripcion } from '../inscripciones/entities/inscripcion.entity';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { JsonDb } from '../database/json-db';
 import { AlumnosService } from './alumnos.service';
-import { Alumno } from './entities/alumno.entity';
 
 describe('AlumnosService', () => {
+  let directory: string;
   let service: AlumnosService;
-  const alumnos = {
-    create: jest.fn((dto: Partial<Alumno>) => dto),
-    save: jest.fn(),
-    find: jest.fn(),
-    findOneBy: jest.fn(),
-    delete: jest.fn(),
-  };
-  const inscripciones = {
-    count: jest.fn(),
-  };
+  let db: JsonDb;
+  const previousDataFile = process.env.DATA_FILE;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    directory = await mkdtemp(join(tmpdir(), 'clase5-'));
+    process.env.DATA_FILE = join(directory, 'db.json');
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AlumnosService,
-        { provide: getRepositoryToken(Alumno), useValue: alumnos },
-        { provide: getRepositoryToken(Inscripcion), useValue: inscripciones },
-      ],
+      providers: [AlumnosService, JsonDb],
     }).compile();
     service = module.get(AlumnosService);
+    db = module.get(JsonDb);
+  });
+
+  afterEach(async () => {
+    if (previousDataFile === undefined) delete process.env.DATA_FILE;
+    else process.env.DATA_FILE = previousDataFile;
+    await rm(directory, { recursive: true, force: true });
   });
 
   it('crea un alumno', async () => {
-    const dto = {
+    const alumno = await service.create({
       nombre: 'Ana',
       apellido: 'Pérez',
       email: 'ana@correo.edu',
       legajo: 'A-1',
-    };
-    alumnos.save.mockResolvedValue({ id: 'uuid', ...dto });
+    });
 
-    await expect(service.create(dto)).resolves.toMatchObject(dto);
-    expect(alumnos.create).toHaveBeenCalledWith(dto);
+    expect(alumno.id).toEqual(expect.any(String));
+    expect(alumno.email).toBe('ana@correo.edu');
+    await expect(service.findAll()).resolves.toEqual([alumno]);
   });
 
   it('rechaza un email o legajo repetido', async () => {
-    alumnos.save.mockRejectedValue(
-      new QueryFailedError('insert', [], { code: '23505', message: 'dup' }),
-    );
+    await service.create({
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      email: 'ana@correo.edu',
+      legajo: 'A-1',
+    });
 
     await expect(
       service.create({
         nombre: 'Ana',
-        apellido: 'Pérez',
+        apellido: 'García',
         email: 'ana@correo.edu',
-        legajo: 'A-1',
+        legajo: 'A-2',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('no encuentra un alumno inexistente', async () => {
-    alumnos.findOneBy.mockResolvedValue(null);
     await expect(service.findOne('uuid')).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
 
   it('no elimina un alumno con inscripciones', async () => {
-    alumnos.findOneBy.mockResolvedValue({ id: 'uuid' });
-    inscripciones.count.mockResolvedValue(1);
+    const alumno = await service.create({
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      email: 'ana@correo.edu',
+      legajo: 'A-1',
+    });
+    await db.update((data) => {
+      data.inscripciones.push({
+        id: 'inscripcion-1',
+        alumnoId: alumno.id,
+        materia: 'Matemática I',
+        anio: 2026,
+        cuatrimestre: 1,
+      });
+    });
 
-    await expect(service.remove('uuid')).rejects.toBeInstanceOf(
+    await expect(service.remove(alumno.id)).rejects.toBeInstanceOf(
       ConflictException,
     );
-    expect(alumnos.delete).not.toHaveBeenCalled();
+    await expect(service.findOne(alumno.id)).resolves.toMatchObject({
+      id: alumno.id,
+    });
   });
 });
