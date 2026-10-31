@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: biblioteca
+      MARIADB_USER: biblioteca
+      MARIADB_PASSWORD: biblioteca
+    ports:
+      - "3306:3306"
+    volumes:
+      - datos-mariadb:/var/lib/mysql
+      # Los scripts de esta carpeta se ejecutan UNA sola vez, al crear el volumen
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: biblioteca
+      DB_PASSWORD: biblioteca
+      DB_NAME: biblioteca
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app                  # el código se edita en su máquina y se recarga solo
+      - /app/node_modules       # pero node_modules es el del contenedor
+
+  adminer:                      # cliente web de la base (opcional)
+    image: adminer
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+
+volumes:
+  datos-mariadb:
