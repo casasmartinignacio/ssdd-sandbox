@@ -36,6 +36,7 @@ const config: Config = {
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
+  watchman: false,
 };
 
 export default config;

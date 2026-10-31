@@ -6,6 +6,7 @@
   ],
   "rootDir": ".",
   "testEnvironment": "node",
+  "watchman": false,
   "testRegex": ".e2e-spec.ts$",
   "extensionsToTreatAsEsm": [".ts"],
   "transform": {

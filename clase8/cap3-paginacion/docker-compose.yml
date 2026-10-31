@@ -30,6 +30,10 @@ services:
       DB_USER: biblioteca
       DB_PASSWORD: biblioteca
       DB_NAME: biblioteca
+      # En Docker Desktop (Windows y macOS) el bind mount no emite eventos
+      # de archivo. TypeScript hace polling y nest start --watch recarga igual.
+      TSC_WATCHFILE: UseFsEventsWithFallbackDynamicPolling
+      TSC_WATCHDIRECTORY: DynamicPriorityPolling
     ports:
       - "3000:3000"
     volumes:
